@@ -89,42 +89,123 @@
         id="status"
         style="font-size:32px;"
       >
-        ONLINE
+        CONNECTING
       </div>
 
       <div
         class="small"
         id="lastupdate"
       >
-        waiting for data...
+        waiting for mqtt...
       </div>
     </div>
 
   </div>
 
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
   <script>
 
-    // DEMO VALUES
+    const tempElement =
+      document.getElementById(
+        "temp"
+      );
 
-    let temp = 23.6;
-    let battery = 3.84;
+    const batteryElement =
+      document.getElementById(
+        "battery"
+      );
 
-    document.getElementById(
-      "temp"
-    ).innerText =
-      temp + "°C";
+    const statusElement =
+      document.getElementById(
+        "status"
+      );
 
-    document.getElementById(
-      "battery"
-    ).innerText =
-      battery + "V";
+    const updateElement =
+      document.getElementById(
+        "lastupdate"
+      );
 
-    document.getElementById(
-      "lastupdate"
-    ).innerText =
-      "Last update: "
-      +
-      new Date().toLocaleTimeString();
+    const client =
+      mqtt.connect(
+        "wss://broker.hivemq.com:8884/mqtt"
+      );
+
+    client.on(
+      "connect",
+      () => {
+
+        statusElement.innerText =
+          "ONLINE";
+
+        updateElement.innerText =
+          "MQTT CONNECTED";
+
+        client.subscribe(
+          "solarai/balazsnode9284/temp"
+        );
+
+        client.subscribe(
+          "solarai/balazsnode9284/battery"
+        );
+      }
+    );
+
+    client.on(
+      "message",
+      (
+        topic,
+        message
+      ) => {
+
+        const value =
+          message.toString();
+
+        if(
+          topic
+          ===
+          "solarai/balazsnode9284/temp"
+        ){
+
+          tempElement.innerText =
+            value + "°C";
+        }
+
+        if(
+          topic
+          ===
+          "solarai/balazsnode9284/battery"
+        ){
+
+          batteryElement.innerText =
+            value + "V";
+        }
+
+        updateElement.innerText =
+          "Last update: "
+          +
+          new Date()
+          .toLocaleTimeString();
+      }
+    );
+
+    client.on(
+      "offline",
+      () => {
+
+        statusElement.innerText =
+          "OFFLINE";
+      }
+    );
+
+    client.on(
+      "error",
+      () => {
+
+        statusElement.innerText =
+          "MQTT ERROR";
+      }
+    );
 
   </script>
 
