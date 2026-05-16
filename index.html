@@ -9,24 +9,21 @@ import {
 } from "recharts";
 
 export default function SolarAIDashboard() {
-  const temp = 23.6;
-  const battery = 3.84;
+  const currentTemp = 23.6;
+  const currentBattery = 3.84;
   const batteryPercent = 64;
   const lastUpdate = "11:42";
   const nodeStatus = "SLEEPING";
 
-  const history = [
-    { t: "00:00", temp: 18.2, batt: 3.98 },
-    { t: "02:00", temp: 17.5, batt: 3.94 },
-    { t: "04:00", temp: 16.9, batt: 3.87 },
-    { t: "06:00", temp: 17.2, batt: 3.82 },
-    { t: "08:00", temp: 20.1, batt: 3.76 },
-    { t: "10:00", temp: 22.8, batt: 3.79 },
-    { t: "12:00", temp: 24.3, batt: 3.84 },
-    { t: "14:00", temp: 25.7, batt: 3.88 },
-    { t: "16:00", temp: 26.1, batt: 3.92 },
-    { t: "18:00", temp: 24.8, batt: 3.95 },
-  ];
+  let liveTemp = 0;
+  let liveBattery = 0;
+
+  const history = JSON.parse(
+    localStorage.getItem(
+      "solarai-history"
+    ) ||
+    "[]"
+  );
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-6">
@@ -44,13 +41,15 @@ export default function SolarAIDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
 
+        {/* MQTT HISTORY READY */}
+
           <div className="bg-zinc-900 rounded-3xl p-6 border border-zinc-800 shadow-2xl">
             <div className="text-zinc-400 text-sm">
               Temperature
             </div>
 
             <div className="text-5xl font-bold mt-4">
-              {temp}°C
+              {currentTemp}°C
             </div>
           </div>
 
@@ -60,7 +59,7 @@ export default function SolarAIDashboard() {
             </div>
 
             <div className="text-5xl font-bold mt-4">
-              {battery}V
+              {currentBattery}V
             </div>
           </div>
 
@@ -124,60 +123,10 @@ export default function SolarAIDashboard() {
             </div>
           </div>
 
-          <div className="bg-zinc-900 rounded-3xl p-6 border border-zinc-800 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold">
-                Battery History
-              </h2>
-            </div>
-
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={history}>
-                  <CartesianGrid stroke="#27272a" />
-
-                  <XAxis
-                    dataKey="t"
-                    stroke="#71717a"
-                  />
-
-                  <YAxis stroke="#71717a" />
-
-                  <Tooltip />
-
-                  <Line
-                    type="monotone"
-                    dataKey="batt"
-                    stroke="#3b82f6"
-                    strokeWidth={4}
-                    dot={
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold">
-                Battery History
-              </h2>
-            </div>
-
-            <div className="space-y-3">
-              {history.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-zinc-800 rounded-2xl p-3"
-                >
-                  <div className="text-zinc-400">
-                    {item.t}
-                  </div>
-
-                  <div className="font-semibold text-xl">
-                    {item.batt}V
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
         <div className="bg-zinc-900 rounded-3xl p-6 border border-zinc-800 shadow-2xl">
           <h2 className="text-2xl font-semibold mb-4">
+            Planned Features
+          </h2>
             Planned Features
           </h2>
 
