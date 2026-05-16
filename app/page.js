@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>SOLAR AI Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body{
+      background:#0f1115;
+      color:white;
+      font-family:Arial;
+      margin:0;
+      padding:20px;
+    }
+
+    h1{
+      font-size:42px;
+      margin-bottom:10px;
+    }
+
+    .subtitle{
+      color:#888;
+      margin-bottom:30px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+      gap:20px;
+    }
+
+    .card{
+      background:#1b1f27;
+      border-radius:24px;
+      padding:24px;
+      box-shadow:0 0 30px rgba(0,0,0,0.3);
+    }
+
+    .label{
+      color:#888;
+      margin-bottom:15px;
+      font-size:20px;
+      font-weight:bold;
+    }
+
+    .value{
+      font-size:58px;
+      font-weight:bold;
+    }
+
+    .small{
+      color:#777;
+      margin-top:10px;
+    }
+
+    .charts{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:20px;
+      margin-top:20px;
+    }
+
+    .event-feed{
+      margin-top:20px;
+    }
+
+    .event-item{
+      background:#1b1f27;
+      border-radius:18px;
+      padding:16px;
+      margin-bottom:12px;
+      border-left:4px solid #22c55e;
+      font-size:18px;
+    }
+
+    .event-time{
+      color:#888;
+      font-size:14px;
+      margin-bottom:6px;
+    }
+
+    canvas{
+      width:100% !important;
+      height:320px !important;
+    }
+
+    @media(max-width:900px){
+      .value{
+        font-size:38px;
+      }
+    }
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>SOLAR AI Dashboard</h1>
+
+  <div class="subtitle">
+    MQTT + Deep Sleep Solar Node
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="label">
+        Temperature
+      </div>
+
+      <div
+        class="value"
+        id="temp"
+      >
+        --
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label">
+        Battery Voltage
+      </div>
+
+      <div
+        class="value"
+        id="battery"
+      >
+        --
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label">
+        Node Status
+      </div>
+
+      <div
+        class="value"
+        id="status"
+        style="font-size:32px;"
+      >
+        CONNECTING
+      </div>
+
+      <div
+        class="small"
+        id="lastupdate"
+      >
+        waiting for mqtt...
+      </div>
+    </div>
+
+  </div>
+
+  <div class="charts">
+
+    <!-- MOBILE FIRST STACKED CHARTS -->
+
+    <div class="card">
+      <div class="label">
+        Temperature History
+      </div>
+
+      <canvas id="tempChart"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="label">
+        Battery History
+      </div>
+
+      <canvas id="batteryChart"></canvas>
+    </div>
+
+  </div>
+
+  <script>
+
+    const tempElement =
+      document.getElementById("temp");
+
+    const batteryElement =
+      document.getElementById("battery");
+
+    const statusElement =
+      document.getElementById("status");
+
+    const updateElement =
+      document.getElementById("lastupdate");
+
+    let history = JSON.parse(
+      localStorage.getItem(
+        "solarai-history"
+      ) ||
+      "[]"
+    );
+
+    if(history.length === 0){
+
+      history = [
+        {
+          t:"00:00",
+          temp:18.2,
+          batt:3.98
+        },
+        {
+          t:"04:00",
+          temp:16.9,
+          batt:3.87
+        },
+        {
+          t:"08:00",
+          temp:20.1,
+          batt:3.76
+        }
+      ];
+    }
+
+    Chart.defaults.color = "#cccccc";
+
+    Chart.defaults.font.size = 18;
+
+    const tempChart = new Chart(
+      document.getElementById(
+        "tempChart"
+      ),
+      {
+        type:"line",
+
+        data:{
+          labels:history.map(h => h.t),
+
+          plugins:{
+            legend:{
+              labels:{
+                font:{
+                  size:20
+                }
+              }
+            }
+          },
+
+          datasets:[{
+            label:"Temperature",
+            data:history.map(h => h.temp),
+            borderColor:"#22c55e",
+            tension:0.3,
+            borderWidth:4
+          }]
+        }
+      }
+    );
+
+    const batteryChart = new Chart(
+      document.getElementById(
+        "batteryChart"
+      ),
+      {
+        type:"line",
+
+        data:{
+          labels:history.map(h => h.t),
+
+          plugins:{
+            legend:{
+              labels:{
+                font:{
+                  size:20
+                }
+              }
+            }
+          },
+
+          datasets:[{
+            label:"Battery",
+            data:history.map(h => h.batt),
+            borderColor:"#3b82f6",
+            tension:0.3,
+            borderWidth:4
+          }]
+        }
+      }
+    );
+
+    function refreshCharts(){
+
+      tempChart.data.labels =
+        history.map(h => h.t);
+
+      tempChart.data.datasets[0].data =
+        history.map(h => h.temp);
+
+      tempChart.update();
+
+      batteryChart.data.labels =
+        history.map(h => h.t);
+
+      batteryChart.data.datasets[0].data =
+        history.map(h => h.batt);
+
+      batteryChart.update();
+    }
+
+    const events = [
+      {
+        time:"15:22",
+        text:"TIMER WAKE"
+      },
+      {
+        time:"15:22",
+        text:"MQTT DATA SENT"
+      },
+      {
+        time:"15:22",
+        text:"TEMP 24.1°C"
+      },
+      {
+        time:"15:22",
+        text:"BATTERY 3.91V"
+      },
+      {
+        time:"15:23",
+        text:"ENTER DEEP SLEEP"
+      }
+    ];
+
+    const eventFeed =
+      document.createElement("div");
+
+    eventFeed.className =
+      "event-feed";
+
+    eventFeed.innerHTML = `
+      <div class="card">
+
+        <div class="label">
+          Telegram / Event Feed
+        </div>
+
+        ${events.map(event => `
+
+          <div class="event-item">
+
+            <div class="event-time">
+              ${event.time}
+            </div>
+
+            <div>
+              ${event.text}
+            </div>
+
+          </div>
+
+        `).join("")}
+
+      </div>
+    `;
+
+    document.body.appendChild(
+      eventFeed
+    );
+
+    const now = new Date();
+
+    const clientScript =
+  document.createElement("script");
+
+clientScript.src =
+  "https://unpkg.com/mqtt/dist/mqtt.min.js";
+
+clientScript.onload = () => {
+
+  const client = mqtt.connect(
+    "wss://broker.emqx.io:8084/mqtt"
+  );
+
+  client.on(
+    "connect",
+    () => {
+
+      statusElement.innerText =
+        "MQTT LIVE";
+
+      events.unshift({
+        time:new Date()
+          .toLocaleTimeString(),
+        text:"MQTT CONNECTED"
+      });
+
+      client.subscribe(
+        "solarai/balazsnode9284/temp"
+      );
+
+      client.subscribe(
+        "solarai/balazsnode9284/battery"
+      );
+    }
+  );
+
+  client.on(
+    "message",
+    (
+      topic,
+      message
+    ) => {
+
+      const value =
+        parseFloat(
+          message.toString()
+        );
+
+      const timeLabel =
+        new Date()
+        .toLocaleTimeString(
+          [],
+          {
+            hour:"2-digit",
+            minute:"2-digit"
+          }
+        );
+
+      if(
+        topic ===
+        "solarai/balazsnode9284/temp"
+      ){
+
+        tempElement.innerText =
+          value + "°C";
+
+        history.push({
+          t:timeLabel,
+          temp:value,
+          batt:parseFloat(
+            batteryElement.innerText
+          ) || 0
+        });
+
+        tempChart.data.labels =
+          history.map(h => h.t);
+
+        tempChart.data.datasets[0].data =
+          history.map(h => h.temp);
+
+        tempChart.update();
+      }
+
+      if(
+        topic ===
+        "solarai/balazsnode9284/battery"
+      ){
+
+        batteryElement.innerText =
+          value + "V";
+
+        batteryChart.data.labels =
+          history.map(h => h.t);
+
+        batteryChart.data.datasets[0].data =
+          history.map(h => h.batt);
+
+        batteryChart.update();
+      }
+
+      localStorage.setItem(
+        "solarai-history",
+        JSON.stringify(history)
+      );
+
+      updateElement.innerText =
+        "Last wake: "
+        +
+        new Date()
+        .toLocaleTimeString();
+    }
+  );
+};
+
+document.head.appendChild(
+  clientScript
+);
+
+    batteryElement.innerText =
+      "3.84V";
+
+    statusElement.innerText =
+      "MQTT LIVE";
+
+    updateElement.innerText =
+      "Last wake: "
+      +
+      now.toLocaleTimeString();
+
+    const wakeBadge = document.createElement("div");
+
+    wakeBadge.className = "card";
+
+    wakeBadge.innerHTML = `
+      <div class="label">
+        Wake Reason
+      </div>
+
+      <div class="value" style="font-size:32px;">
+        TIMER WAKE
+      </div>
+
+      <div class="small">
+        Deep sleep cycle active
+      </div>
+    `;
+
+    document.querySelector(".grid")
+      .appendChild(wakeBadge);
+
+  </script>
+
+</body>
+</html>
