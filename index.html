@@ -365,15 +365,121 @@
     const now = new Date();
 
     const clientScript =
-      document.createElement("script");
+  document.createElement("script");
 
-    clientScript.src =
-      "https://unpkg.com/mqtt/dist/mqtt.min.js";
+clientScript.src =
+  "https://unpkg.com/mqtt/dist/mqtt.min.js";
 
-    clientScript.onload = () => {
+clientScript.onload = () => {
 
-      const client = mqtt.connect(
-        "w
+  const client = mqtt.connect(
+    "wss://broker.emqx.io:8084/mqtt"
+  );
+
+  client.on(
+    "connect",
+    () => {
+
+      statusElement.innerText =
+        "MQTT LIVE";
+
+      events.unshift({
+        time:new Date()
+          .toLocaleTimeString(),
+        text:"MQTT CONNECTED"
+      });
+
+      client.subscribe(
+        "solarai/balazsnode9284/temp"
+      );
+
+      client.subscribe(
+        "solarai/balazsnode9284/battery"
+      );
+    }
+  );
+
+  client.on(
+    "message",
+    (
+      topic,
+      message
+    ) => {
+
+      const value =
+        parseFloat(
+          message.toString()
+        );
+
+      const timeLabel =
+        new Date()
+        .toLocaleTimeString(
+          [],
+          {
+            hour:"2-digit",
+            minute:"2-digit"
+          }
+        );
+
+      if(
+        topic ===
+        "solarai/balazsnode9284/temp"
+      ){
+
+        tempElement.innerText =
+          value + "°C";
+
+        history.push({
+          t:timeLabel,
+          temp:value,
+          batt:parseFloat(
+            batteryElement.innerText
+          ) || 0
+        });
+
+        tempChart.data.labels =
+          history.map(h => h.t);
+
+        tempChart.data.datasets[0].data =
+          history.map(h => h.temp);
+
+        tempChart.update();
+      }
+
+      if(
+        topic ===
+        "solarai/balazsnode9284/battery"
+      ){
+
+        batteryElement.innerText =
+          value + "V";
+
+        batteryChart.data.labels =
+          history.map(h => h.t);
+
+        batteryChart.data.datasets[0].data =
+          history.map(h => h.batt);
+
+        batteryChart.update();
+      }
+
+      localStorage.setItem(
+        "solarai-history",
+        JSON.stringify(history)
+      );
+
+      updateElement.innerText =
+        "Last wake: "
+        +
+        new Date()
+        .toLocaleTimeString();
+    }
+  );
+};
+
+document.head.appendChild(
+  clientScript
+);
 
     batteryElement.innerText =
       "3.84V";
