@@ -55,7 +55,7 @@
 
     .charts{
       display:grid;
-      grid-template-columns:1fr 1fr;
+      grid-template-columns:1fr;
       gap:20px;
       margin-top:20px;
     }
@@ -66,9 +66,10 @@
     }
 
     @media(max-width:900px){
-      .charts{
-        grid-template-columns:1fr;
+      .value{
+        font-size:38px;
       }
+    }
     }
   </style>
 </head>
@@ -133,6 +134,8 @@
   </div>
 
   <div class="charts">
+
+    <!-- MOBILE FIRST STACKED CHARTS -->
 
     <div class="card">
       <div class="label">
@@ -262,12 +265,33 @@
       "3.84V";
 
     statusElement.innerText =
-      "ONLINE";
+      "SLEEPING";
 
     updateElement.innerText =
-      "Last update: "
+      "Last wake: "
       +
       now.toLocaleTimeString();
+
+    const wakeBadge = document.createElement("div");
+
+    wakeBadge.className = "card";
+
+    wakeBadge.innerHTML = `
+      <div class="label">
+        Wake Reason
+      </div>
+
+      <div class="value" style="font-size:32px;">
+        TIMER WAKE
+      </div>
+
+      <div class="small">
+        Deep sleep cycle active
+      </div>
+    `;
+
+    document.querySelector(".grid")
+      .appendChild(wakeBadge);
 
   </script>
 
